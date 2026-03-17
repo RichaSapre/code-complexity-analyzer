@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALGO_HACK // v1.0</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&family=Orbitron:wght@400..900&family=Press+Start+2P&family=Rajdhani:wght@300..700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --surface: #0a0a0c;
+            --border: #1a1a1f;
+            --neon-pink: #ff00ff;
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --neon-green: #39ff14;
+            --neon-yellow: #fff01f;
+            --text-main: #e0e0e0;
+            --text-dim: #707075;
+            --grid-color: rgba(0, 243, 255, 0.03);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+            cursor: crosshair;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            position: relative;
+        }
+
+        /* CRT Scanline Effect */
+        body::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 10000;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        /* Container */
+        .hud-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+        }
+
+        header {
+            border-left: 5px solid var(--neon-blue);
+            padding-left: 1.5rem;
+            margin-bottom: 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .title-group h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #fff;
+            text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+            margin-bottom: 0.2rem;
+        }
+
+        .tagline {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.6rem;
+            color: var(--neon-pink);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Editor Section */
+        .hack-zone {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .editor-frame {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.05);
+        }
+
+        .editor-frame::before {
+            content: "";
+            position: absolute;
+            top: -1px; left: -1px;
+            width: 20px; height: 2px;
+            background: var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .editor-frame::after {
+            content: "";
+            position: absolute;
+            bottom: -1px; right: -1px;
+            width: 2px; height: 20px;
+            background: var(--neon-pink);
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .editor-nav {
+            background: #111;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sys-info {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+        }
+
+        .editor-content {
+            display: flex;
+            min-height: 400px;
+        }
+
+        .line-numbers {
+            width: 40px;
+            background: #080808;
+            border-right: 1px solid var(--border);
+            color: #333;
+            text-align: center;
+            padding-top: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        #code-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 1rem;
+            color: var(--neon-green);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            resize: none;
+            line-height: 1.5;
+            caret-color: var(--neon-yellow);
+        }
+
+        /* Sidebar HUD */
+        .side-hud {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .hud-card {
+            background: rgba(10, 10, 12, 0.8);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .hud-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            color: var(--text-dim);
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        select {
+            width: 100%;
+            background: #000;
+            border: 1px solid var(--border);
+            color: var(--neon-blue);
+            padding: 0.8rem;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .btn-execute {
+            width: 100%;
+            background: transparent;
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 1rem;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .btn-execute:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 30px var(--neon-blue);
+        }
+
+        .btn-execute:active {
+            transform: scale(0.98);
+        }
+
+        /* Loading Animation */
+        #loader {
+            display: none;
+            margin-top: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--neon-pink);
+            font-size: 0.9rem;
+        }
+
+        /* Results Hud */
+        #results {
+            display: none;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .power-stat {
+            grid-column: span 6;
+            background: #0d0d0f;
+            border: 1px solid var(--border);
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .stat-banner {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 3rem;
+            margin: 1rem 0;
+        }
+
+        .glitch-text {
+            animation: glitch 1s infinite alternate;
+        }
+
+        @keyframes glitch {
+            0% { transform: skewX(0deg); }
+            20% { transform: skewX(-5deg); color: var(--neon-pink); }
+            40% { transform: skewX(5deg); color: var(--neon-blue); }
+            100% { transform: skewX(0deg); }
+        }
+
+        .danger-zone {
+            grid-column: span 4;
+            border: 1px solid #300;
+            background: rgba(255, 0, 0, 0.05);
+            padding: 1.5rem;
+        }
+
+        .analysis-zone {
+            grid-column: span 8;
+            border: 1px solid #033;
+            background: rgba(0, 243, 255, 0.02);
+            padding: 1.5rem;
+        }
+
+        .section-header {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-yellow);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Diff Viewer Gaming Style */
+        .diff-hud {
+            grid-column: span 12;
+            margin-top: 1rem;
+        }
+
+        .diff-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .diff-panel {
+            background: #080808;
+            border: 1px solid var(--border);
+            min-height: 200px;
+            padding: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            border-top: 3px solid var(--border);
+        }
+
+        .panel-old { border-color: var(--neon-pink); }
+        .panel-new { border-color: var(--neon-green); }
+
+        .panel-label {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            display: block;
+            margin-bottom: 1rem;
+        }
+
+        .optimized-msg {
+            grid-column: span 12;
+            padding: 1rem;
+            background: rgba(57, 255, 20, 0.05);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            margin-top: 1rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+        }
+
+        /* Badge Colors */
+        .rank-S { color: var(--neon-green); text-shadow: 0 0 15px var(--neon-green); }
+        .rank-A { color: var(--neon-blue); text-shadow: 0 0 15px var(--neon-blue); }
+        .rank-F { color: var(--neon-pink); text-shadow: 0 0 15px var(--neon-pink); }
+
+        footer {
+            margin-top: 4rem;
+            padding: 2rem 0;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.4rem;
+            color: var(--text-dim);
+        }
+
+        @media (max-width: 1000px) {
+            .hack-zone { grid-template-columns: 1fr; }
+            .diff-grid { grid-template-columns: 1fr; }
+            .power-stat { grid-column: span 12; }
+            .danger-zone, .analysis-zone { grid-column: span 12; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hud-wrapper">
+        <header>
+            <div class="title-group">
+                <h1>ALGO_HACK</h1>
+                <p class="tagline">Neural Analysis System // v1.0.8</p>
+            </div>
+            <div class="sys-info">
+                STATUS: READY TO BREACH<br>
+                AUTH: RICHA NITIN SAPRE
+            </div>
+        </header>
+
+        <main class="hack-zone">
+            <section class="editor-frame">
+                <div class="editor-nav">
+                    <span class="sys-info">/ROOT/USR/SOURCE_CONTROL</span>
+                    <div style="display: flex; gap: 5px;">
+                        <span style="color: grey; font-size: 10px;">• • •</span>
+                    </div>
+                </div>
+                <div class="editor-content">
+                    <div class="line-numbers" id="line-numbers">
+                        01<br>02<br>03<br>04<br>05<br>06<br>07<br>08<br>09<br>10
+                    </div>
+                    <textarea id="code-input" placeholder="// INJECT SOURCE CODE HERE..." spellcheck="false"></textarea>
+                </div>
+            </section>
+
+            <aside class="side-hud">
+                <div class="hud-card">
+                    <span class="hud-label">SELECT_ENVIRONMENT</span>
+                    <select id="language-select">
+                        <option value="python">PYTHON_ENV</option>
+                        <option value="javascript">NODE_JS</option>
+                        <option value="java">JAVA_RUNTIME</option>
+                        <option value="cpp">CPP_CORE</option>
+                        <option value="any">GLOBAL_SCAN</option>
+                    </select>
+                </div>
+                <div class="hud-card">
+                    <button class="btn-execute" id="analyze-btn">START BREACH</button>
+                    <div id="loader">
+                        > INITIALIZING NEURAL BUFFER...<br>
+                        > SCANNING ALGORITHMIC PATHS...<br>
+                        > EXTRACTING BIG_O SIGNATURE...
+                        <span id="load-cursor" style="display:inline-block; width:8px; height:12px; background:var(--neon-pink);"></span>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <section id="results">
+            <div class="power-stat">
+                <span class="hud-label">TIME_COMPLEXITY_RANK</span>
+                <div id="time-val" class="stat-banner rank-A glitch-text">O(N)</div>
+            </div>
+            <div class="power-stat">
+                <span class="hud-label">MEMORY_FOOTPRINT_LVL</span>
+                <div id="space-val" class="stat-banner rank-S glitch-text">O(1)</div>
+            </div>
+
+            <div class="danger-zone card">
+                <div class="section-header">
+                    <span>⚠ CORE_BOTTLENECK</span>
+                    <span style="color: var(--neon-pink);">STATUS: CRITICAL</span>
+                </div>
+                <p id="bottleneck-text" style="font-size: 1.1rem; color: #fff;"></p>
+            </div>
+
+            <div class="analysis-zone card">
+                <div class="section-header">
+                    <span>NEURAL_ANALYSIS_REPORT</span>
+                    <span style="color: var(--neon-blue);">RELIABILITY: 98.4%</span>
+                </div>
+                <p id="explanation-text" style="color: var(--text-main); font-size: 1.1rem;"></p>
+            </div>
+
+            <div class="diff-hud">
+                <div class="section-header">
+                    <span>OPTIMIZATION_DIFF_ENGINE</span>
+                    <span style="color: var(--neon-green);">VERIFIED_PATCH</span>
+                </div>
+                <div class="diff-grid">
+                    <div class="diff-panel panel-old">
+                        <span class="panel-label" style="color: var(--neon-pink);">UNOPTIMIZED_CORE.EXE</span>
+                        <div id="original-code-display" style="white-space: pre-wrap; color: var(--text-dim);"></div>
+                    </div>
+                    <div class="diff-panel panel-new">
+                        <span class="panel-label" style="color: var(--neon-green);">PATCHED_VERSION_2.0</span>
+                        <div id="optimized-code-display" style="white-space: pre-wrap; color: #fff;"></div>
+                    </div>
+                </div>
+                <div class="optimized-msg" id="opt-explanation-text"></div>
+            </div>
+        </section>
+
+        <div id="error-toast" style="display:none; color: var(--neon-pink); border: 1px solid var(--neon-pink); padding: 1rem; margin-top:2rem; font-family: 'JetBrains Mono';"></div>
+
+        <footer>
+            <span>© 2026 // NEURAL_DEPOT</span>
+            <span>RICHA NITIN SAPRE // ALL_SYSTEMS_GO</span>
+        </footer>
+    </div>
+
+    <script>
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const codeInput = document.getElementById('code-input');
+        const loader = document.getElementById('loader');
+        const results = document.getElementById('results');
+        const errorToast = document.getElementById('error-toast');
+
+        // Typing animation cursor
+        setInterval(() => {
+            const cursor = document.getElementById('load-cursor');
+            cursor.style.visibility = cursor.style.visibility === 'hidden' ? 'visible' : 'hidden';
+        }, 300);
+
+        codeInput.addEventListener('input', () => {
+            const lines = codeInput.value.split('\n').length;
+            const lineNumbers = document.getElementById('line-numbers');
+            lineNumbers.innerHTML = Array.from({length: Math.max(lines, 10)}, (_, i) => {
+                const n = i + 1;
+                return n < 10 ? `0${n}` : n;
+            }).join('<br>');
+        });
+
+        function getRank(complexity) {
+            const comp = complexity.toLowerCase();
+            if (comp.includes('1') || comp.includes('log n')) return 'rank-S';
+            if (comp.includes('n log n') || comp.includes('n')) return 'rank-A';
+            return 'rank-F';
+        }
+
+        analyzeBtn.addEventListener('click', async () => {
+            const code = codeInput.value.trim();
+            if (!code) return;
+
+            results.style.display = 'none';
+            errorToast.style.display = 'none';
+            loader.style.display = 'block';
+            analyzeBtn.disabled = true;
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.details || data.error);
+
+                // Update UI
+                const timeEl = document.getElementById('time-val');
+                const spaceEl = document.getElementById('space-val');
+                
+                timeEl.innerText = data.time_complexity;
+                timeEl.className = `stat-banner glitch-text ${getRank(data.time_complexity)}`;
+                
+                spaceEl.innerText = data.space_complexity;
+                spaceEl.className = `stat-banner glitch-text ${getRank(data.space_complexity)}`;
+
+                document.getElementById('bottleneck-text').innerText = data.bottleneck;
+                document.getElementById('explanation-text').innerText = data.explanation;
+                document.getElementById('original-code-display').innerText = code;
+                document.getElementById('optimized-code-display').innerText = data.optimized_code;
+                document.getElementById('opt-explanation-text').innerText = `> PATCH_LOG: ${data.optimization_explanation}`;
+
+                loader.style.display = 'none';
+                results.style.display = 'grid';
+
+            } catch (err) {
+                loader.style.display = 'none';
+                errorToast.innerText = `[CRITICAL_SYSTEM_ERROR]: ${err.message}`;
+                errorToast.style.display = 'block';
+            } finally {
+                analyzeBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

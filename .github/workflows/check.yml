@@ -1,0 +1,52 @@
+name: Code Complexity Analyzer Checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Backend file exists
+        run: |
+          if [ -f "backend/app.py" ]; then
+            echo "backend/app.py exists"
+          else
+            echo "backend/app.py is missing"
+            exit 1
+          fi
+
+      - name: Check Frontend file exists
+        run: |
+          if [ -f "frontend/index.html" ]; then
+            echo "frontend/index.html exists"
+          else
+            echo "frontend/index.html is missing"
+            exit 1
+          fi
+
+      - name: Check Requirements file exists
+        run: |
+          if [ -f "backend/requirements.txt" ]; then
+            echo "backend/requirements.txt exists"
+          else
+            echo "backend/requirements.txt is missing"
+            exit 1
+          fi
+
+      - name: Validate app.py content
+        run: |
+          if grep -iq "flask" backend/app.py; then
+            echo "app.py contains flask"
+          else
+            echo "app.py does not contain flask"
+            exit 1
+          fi
+
+      - name: Log Success
+        run: echo "All architectural checks passed successfully."
